@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-/* eslint-disable class-methods-use-this */
+/* eslint-disable */
 const { LimitedArray, getIndexBelowMax } = require('./hash-table-helpers');
 
 class HashTable {
@@ -9,11 +9,19 @@ class HashTable {
     // Do not modify anything inside of the constructor
   }
 
+  checkCapacity() {
+    let fullSlots = 0;
+    this.storage.each((bucket) => {
+      if (bucket) fullSlots++;
+    });
+    return (fullSlots / this.limit) >= 0.75;
+  }
+
   resize() {
     this.limit *= 2;
-    const oldStorage = this.storage;
+    const oldHashTable = this.storage;
     this.storage = new LimitedArray(this.limit);
-    oldStorage.each((bucket) => {
+    oldHashTable.each((bucket) => {
       if (!bucket) return;
       bucket.forEach((pair) => {
         this.insert(pair[0], pair[1]);
@@ -21,52 +29,78 @@ class HashTable {
     });
   }
 
-  capacityIsFull() {
-    let fullCells = 0;
-    this.storage.each((bucket) => {
-      if (bucket !== undefined) fullCells++;
-    });
-    return fullCells / this.limit >= 0.75;
-  }
-
   // Adds the given key, value pair to the hash table
   // Fetch the bucket associated with the given key using the getIndexBelowMax function
   // If no bucket has been created for that index, instantiate a new bucket and add the key, value pair to that new bucket
   // If the key already exists in the bucket, the newer value should overwrite the older value associated with that key
   insert(key, value) {
-    if (this.capacityIsFull()) this.resize();
-    const index = getIndexBelowMax(key.toString(), this.limit);
-    let bucket = this.storage.get(index) || [];
+    // check to see if we've reached the capacity for resizing
+    if (this.checkCapacity()) this.resize();
+    // grab the index associated with this key via the hash function
+     const index = getIndexBelowMax(key.toString(), this.limit);
+     // fetch whatever is stored at this index
+     let tempBucket = this.storage.get(index);
 
-    bucket = bucket.filter(item => item[0] !== key);
-    bucket.push([key, value]);
-    this.storage.set(index, bucket);
+     if (tempBucket === undefined) {
+       // if bucket is undefined, we need to add a bucket there
+       this.storage.set(index, [[key, value]]);
+       return;
+     }
+
+     // we have a bucket at this index already
+     // we want to check to see if the we're trying to insert is already in this bucket
+     for (let i = 0; i < tempBucket.length; i++) {
+       // check to see if any keys in the bucket match the key we want to insert
+       if (tempBucket[i][0] === key) {
+         // this means we have a duplicate key we're trying to insert
+         // we need to overwrite the old value with the new value
+         tempBucket[i][1] = value;
+         this.storage.set(index, tempBucket);
+         return;
+       }
+     }
+
+     // the key we're trying to insert is unique
+     tempBucket.push([key, value]);
+     this.storage.set(index, tempBucket);
   }
   // Removes the key, value pair from the hash table
   // Fetch the bucket associated with the given key using the getIndexBelowMax function
   // Remove the key, value pair from the bucket
   remove(key) {
     const index = getIndexBelowMax(key.toString(), this.limit);
-    let bucket = this.storage.get(index);
+    const bucket = this.storage.get(index);
 
-    if (bucket) {
-      bucket = bucket.filter(item => item[0] !== key);
-      this.storage.set(index, bucket);
+    if (!bucket) return;
+    // if the bucket only contains the key value pair we're looking for, remove it as well
+    if (bucket.length === 1) {
+      this.storage.set(index, undefined);
+      return;
     }
+
+    bucket.forEach((pair, i) => {
+      if (pair[0] === key) {
+        bucket.splice(i, 1);
+        this.storage.set(index, bucket);
+      }
+    });
   }
+  
   // Fetches the value associated with the given key from the hash table
   // Fetch the bucket associated with the given key using the getIndexBelowMax function
   // Find the key, value pair inside the bucket and return the value
   retrieve(key) {
     const index = getIndexBelowMax(key.toString(), this.limit);
     const bucket = this.storage.get(index);
-    let retrieved;
-    if (bucket) {
-      retrieved = bucket.filter(item => item[0] === key)[0];
-    }
 
-    return retrieved ? retrieved[1] : undefined;
+    if (!bucket) return;
+
+    const found = bucket.find((pair) => {
+      return pair[0] === key;
+    });
+    return found[1];
   }
+
 }
 
 module.exports = HashTable;

@@ -1,0 +1,27 @@
+1. What are the order of insertions/removals for the following data structures?
+
+Stack:
+Within a Stack, the order of insertions/removals utilizes the "last in first out (LIFO)" method.
+Push is used to place it on top of the stack and Pop is used 
+to remove the top value off of the stack, in LIFO order.
+
+Queue:
+Within a Queue, the order of insertions/removals utilizes the "first in first out (FIFO)" method.
+Enqueue is used to add an item to the back of the queue and Dequeue is used
+to remove and return an item from the front of the queue, in FIFO order.
+
+2. What is the retrieval time complexity for the following data structures?
+
+Linked List:
+Big O notation
+
+Hash Table:
+Big O notation
+
+Binary Search Trees:
+Big O notation
+
+3. What are some advantages to using a Hash Tables over an array in JavaScript?
+    Hashtables work by finding the exact location your value
+    is stored and returning that value instantaneously or 
+    nearly instantaneously.
